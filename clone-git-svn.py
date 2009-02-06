@@ -4,7 +4,7 @@ import sys;
 import os;
 from string import atoi;
 
-step = 500
+step = 50
 
 def last_rev(a_folder):
 	try:
@@ -51,6 +51,9 @@ if len(sys.argv) > 2:
 	if sys.argv[2] == "info":
 		print_info(a)
 		sys.exit()
+	elif sys.argv[2] == "init":
+		os.system ("mkdir %s" % (a))
+		os.system ("git svn init %s --stdlayout -R svn %s" % (sys.argv[3], a))
 	elif sys.argv[2] == "fetch":
 		print_info(a)
 		if len (sys.argv) > 3:
