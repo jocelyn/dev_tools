@@ -3,7 +3,7 @@ setlocal
 set OP=%1
 set REPO_NAME=gobo-svn-git
 set REPO_SVNURL=https://gobo-eiffel.svn.sourceforge.net/svnroot/gobo-eiffel/
-
+set CLONEGITSVN_STEP=1000
 
 if .%OP%. == .. goto usage
 if .%OP%. == .init. goto init
