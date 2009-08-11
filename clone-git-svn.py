@@ -5,11 +5,18 @@ import os;
 from string import atoi;
 
 step = 50
-cat_cmd = "cat"
-cp_cmd = "cp"
-mv_cmd = "mv"
-rmdir_cmd = "\\rm -rf"
-cpdir_cmd = "cp -rf"
+is_windows = sys.platform == 'win32'
+
+if is_windows:
+	cat_cmd = "type"
+	mv_cmd = "move"
+	rmdir_cmd = "rd /q/s"
+	cpdir_cmd = "xcopy /I /E /Y "
+else:
+	cat_cmd = "cat"
+	mv_cmd = "mv"
+	rmdir_cmd = "\\rm -rf"
+	cpdir_cmd = "cp -rf"
 
 def last_rev(a_folder):
 	try:
@@ -56,10 +63,16 @@ def tail(a_fn, n=4):
 	return res
 
 def git_metadata_filename(a_id,a_rev=0):
-	if rev == 0:
-		s = "%s/.git/svn/.metadata" % (a_id)
+	if is_windows:
+		if rev == 0:
+			s = "%s\\.git\\svn\\.metadata" % (a_id)
+		else:
+			s = "%s-%d\\.git\\svn\\.metadata" % (a_id, a_rev)
 	else:
-		s = "%s-%d/.git/svn/.metadata" % (a_id, a_rev)
+		if rev == 0:
+			s = "%s/.git/svn/.metadata" % (a_id)
+		else:
+			s = "%s-%d/.git/svn/.metadata" % (a_id, a_rev)
 	return s
 
 def print_info(a,rev=0):
@@ -136,7 +149,7 @@ while (i < 79000) and not stop:
 	if not stop:
 		ensure_backup(a);
 		os.system ("%s %s-%d %s-backup" % (mv_cmd, a, rev, a))
-		os.system ("%s %s/.git %s-%d" % (cp_cmd, a, a, i))
+		os.system ("%s %s/.git %s-%d" % (cpdir_cmd, a, a, i))
 		os.system ("echo %d > %s-last" % (i,a))
 	else:
 		do_stop()
