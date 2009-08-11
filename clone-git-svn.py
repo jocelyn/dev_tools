@@ -149,7 +149,13 @@ if len(sys.argv) > 2:
 	elif sys.argv[2] == "init":
 		repo_url = sys.argv[3]
 		os.system ("mkdir %s" % (a))
-		os.system ("git svn init %s --stdlayout -R svn %s" % (repo_url, a))
+		if os.environ.has_key ('CLONEGITSVN_OPTIONS'):
+			extra_options = os.environ['CLONEGITSVN_OPTIONS']
+		else:
+			extra_options = " --stdlayout "
+		cmd = "git svn init %s %s -R svn %s" % (repo_url, extra_options, a)
+		print cmd
+		os.system (cmd)
 		print_info(a)
 	elif sys.argv[2] == "fetch":
 		print_info(a)
