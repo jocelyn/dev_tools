@@ -5,6 +5,11 @@ import os;
 from string import atoi;
 
 step = 50
+cat_cmd = "cat"
+cp_cmd = "cp"
+mv_cmd = "mv"
+rmdir_cmd = "\\rm -rf"
+cpdir_cmd = "cp -rf"
 
 def last_rev(a_folder):
 	try:
@@ -32,13 +37,40 @@ def ensure_backup(a_folder):
 	if not os.path.exists ("%s-backup" %(a_folder)):
 		os.mkdir ("%s-backup" % (a_folder))
 
+def tail(a_fn, n=4):
+	try:
+		f = open (a_fn, 'r');
+		l_lines = re.split ("\n", f.read())
+		f.close()
+	except:
+		l_lines = []
+
+	l_count = len(l_lines)
+	l_lower = l_count - n
+	if l_lower <= 0:
+		l_lower = 1
+	l_upper = l_count
+	res = ""
+	for i in range(l_lower, l_upper):
+		res = "%s%s\n" % (res, l_lines[i])
+	return res
+
+def git_metadata_filename(a_id,a_rev=0):
+	if rev == 0:
+		s = "%s/.git/svn/.metadata" % (a_id)
+	else:
+		s = "%s-%d/.git/svn/.metadata" % (a_id, a_rev)
+	return s
+
 def print_info(a,rev=0):
 	if rev == 0:
 		print ("Info for [%s]" % (a))
-		os.system ("tail -n 4 %s/.git/svn/.metadata" % (a))
+		s = tail (git_metadata_filename (a), 4)
+		print s
 	else:
 		print ("Info for [%s-%d]" % (a,rev))
-		os.system ("tail -n 4 %s-%d/svn/.metadata" % (a,rev))
+		s = tail (git_metadata_filename (a,rev), 4)
+		print s
 
 def logthis(a_folder,msg):
 	lf = open ("%s-log" % (a_folder), 'a+');
@@ -70,14 +102,14 @@ if len(sys.argv) > 2:
 		else:
 			rev = last_rev(a)
 		print_info(a,rev)
-		os.system ("cat %s-%d/svn/.metadata" % (a,rev))
+		os.system ("%s %s" % (cat_cmd, git_metadata_filename(a,rev)))
 
 		if os.path.exists ("%s-%d" % (a, rev)):
-			os.system ("rm -rf %s/.git" % (a))
-			os.system ("cp -rf %s-%d %s/.git" % (a, rev, a))
+			os.system ("%s %s/.git" % (rmdir_cmd, a))
+			os.system ("%s %s-%d %s/.git" % (cpdir_cmd, a, rev, a))
 		else:
 			print ("Cleaning ... unsafe")
-		os.system ("\\rm -rf %s-stop" % (a))
+		os.system ("%s %s-stop" % (rmdir_cmd, a))
 		sys.exit()
 	else:
 		sys.exit()
@@ -103,8 +135,8 @@ while (i < 79000) and not stop:
 	stop = stop_requested(a)
 	if not stop:
 		ensure_backup(a);
-		os.system ("mv %s-%d %s-backup" % (a, rev, a))
-		os.system ("cp -rf %s/.git %s-%d" % (a, a, i))
+		os.system ("%s %s-%d %s-backup" % (mv_cmd, a, rev, a))
+		os.system ("%s %s/.git %s-%d" % (cp_cmd, a, a, i))
 		os.system ("echo %d > %s-last" % (i,a))
 	else:
 		do_stop()

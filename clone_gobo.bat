@@ -1,1 +1,1 @@
-clone-git-svn.py gobosvn-git init https://gobo-eiffel.svn.sourceforge.net/svnroot/gobo-eiffel/
+clone-git-svn.py gobo-svn-git init https://gobo-eiffel.svn.sourceforge.net/svnroot/gobo-eiffel/
