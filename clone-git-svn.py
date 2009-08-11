@@ -151,7 +151,7 @@ while (i < 79000) and not stop:
 		if rev > 0:
 			print "Backing up %s-%d to %s-backup" % (a,rev, a)
 			os.system ("%s %s-%d %s-backup" % (mv_cmd, a, rev, a))
-		os.system ("%s %s/.git %s-%d" % (cpdir_cmd, a, a, i))
+		os.system ("%s %s %s-%d" % (cpdir_cmd, os.path.join (a, '.git'), a, i))
 		os.system ("echo %d > %s-last" % (i,a))
 	else:
 		do_stop()
