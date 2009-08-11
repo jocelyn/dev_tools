@@ -3,7 +3,7 @@
 export OP=$1
 export REPO_NAME=gobo-svn-git
 export REPO_SVNURL=https://gobo-eiffel.svn.sourceforge.net/svnroot/gobo-eiffel/
-export CLONEGITSVN_STEP=10
+export CLONEGITSVN_STEP=500
 
 f_usage() {
 echo Script
