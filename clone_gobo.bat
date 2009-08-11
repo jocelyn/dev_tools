@@ -2,7 +2,7 @@
 setlocal
 set OP=%1
 set REPO_NAME=gobo-svn-git
-export REPO_SVNURL=https://gobo-eiffel.svn.sourceforge.net/svnroot/gobo-eiffel/gobo
+set REPO_SVNURL=https://gobo-eiffel.svn.sourceforge.net/svnroot/gobo-eiffel/gobo
 set CLONEGITSVN_STEP=500
 
 if .%OP%. == .. goto usage
