@@ -205,13 +205,15 @@ while not stop:
 	else:
 		cmd = "git svn fetch -r BASE:%d " % (i)
 
-	repo_last_rev = get_last_fetched_rev(a)
 
 	logthis(a,cmd)
 	sys.stdout.write ("%s\n" % (cmd))
 	os.chdir (a)
 	os.system (cmd)
 	os.chdir (d)
+
+	repo_last_rev = get_last_fetched_rev(a)
+
 	if not stop:
 		stop = stop_requested(a)
 		if not stop:
