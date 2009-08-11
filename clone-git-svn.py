@@ -4,14 +4,14 @@ import sys;
 import os;
 from string import atoi;
 
-step = 50
+step = 500
 is_windows = sys.platform == 'win32'
 
 if is_windows:
 	cat_cmd = "type"
 	mv_cmd = "move"
 	rmdir_cmd = "rd /q/s"
-	cpdir_cmd = "xcopy /I /E /Y "
+	cpdir_cmd = "xcopy /I /E /Y /Q"
 else:
 	cat_cmd = "cat"
 	mv_cmd = "mv"
@@ -45,6 +45,7 @@ def ensure_backup(a_folder):
 		os.mkdir ("%s-backup" % (a_folder))
 
 def tail(a_fn, n=4):
+	import re;
 	try:
 		f = open (a_fn, 'r');
 		l_lines = re.split ("\n", f.read())
@@ -63,16 +64,10 @@ def tail(a_fn, n=4):
 	return res
 
 def git_metadata_filename(a_id,a_rev=0):
-	if is_windows:
-		if a_rev == 0:
-			s = "%s\\.git\\svn\\.metadata" % (a_id)
-		else:
-			s = "%s-%d\\.git\\svn\\.metadata" % (a_id, a_rev)
+	if a_rev == 0:
+		s = os.path.join (a_id, ".git", "svn", ".metadata")
 	else:
-		if a_rev == 0:
-			s = "%s/.git/svn/.metadata" % (a_id)
-		else:
-			s = "%s-%d/.git/svn/.metadata" % (a_id, a_rev)
+		s = os.path.join ("%s-%d" % (a_id, a_rev), ".git", "svn", ".metadata")
 	return s
 
 def print_info(a,rev=0):
