@@ -197,8 +197,8 @@ print "svn URL=%s" %(repo_url)
 print "svn HEAD=%d" %(head_rev)
 print "last svn fetched=%d" %(repo_last_rev)
 
-rev = repo_last_rev
 while not stop:
+	rev = repo_last_rev
 	i = rev + step
 	stop = head_rev > 0 and i >= head_rev
 	if stop:
