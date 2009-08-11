@@ -64,12 +64,12 @@ def tail(a_fn, n=4):
 
 def git_metadata_filename(a_id,a_rev=0):
 	if is_windows:
-		if rev == 0:
+		if a_rev == 0:
 			s = "%s\\.git\\svn\\.metadata" % (a_id)
 		else:
 			s = "%s-%d\\.git\\svn\\.metadata" % (a_id, a_rev)
 	else:
-		if rev == 0:
+		if a_rev == 0:
 			s = "%s/.git/svn/.metadata" % (a_id)
 		else:
 			s = "%s-%d/.git/svn/.metadata" % (a_id, a_rev)
@@ -118,8 +118,8 @@ if len(sys.argv) > 2:
 		os.system ("%s %s" % (cat_cmd, git_metadata_filename(a,rev)))
 
 		if os.path.exists ("%s-%d" % (a, rev)):
-			os.system ("%s %s/.git" % (rmdir_cmd, a))
-			os.system ("%s %s-%d %s/.git" % (cpdir_cmd, a, rev, a))
+			os.system ("%s %s" % (rmdir_cmd, os.path.join (a,'.git')))
+			os.system ("%s %s-%d %s" % (cpdir_cmd, a, rev, os.path.join (a,'.git')))
 		else:
 			print ("Cleaning ... unsafe")
 		os.system ("%s %s-stop" % (rmdir_cmd, a))
