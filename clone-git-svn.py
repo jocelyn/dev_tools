@@ -201,7 +201,7 @@ while not stop:
 	i = repo_last_rev + step
 	stop = head_rev > 0 and i >= head_rev
 	if stop:
-		cmd = "git svn fetch -r BASE:%d " % ('head_rev')
+		cmd = "git svn fetch -r BASE:%d " % (head_rev)
 	else:
 		cmd = "git svn fetch -r BASE:%d " % (i)
 
