@@ -265,14 +265,18 @@ print "svn URL=%s" %(repo_url)
 print "svn HEAD=%d" %(head_rev)
 print "last svn fetched=%d" %(repo_last_rev)
 
+fetch_extra_options = ""
+if os.environ.has_key ('CLONEGITSVN_FETCH_OPTIONS'):
+	fetch_extra_options = os.environ['CLONEGITSVN_FETCH_OPTIONS']
+
 while not stop:
 	get_step(a)
 	i = repo_last_rev + step
 	stop = head_rev > 0 and i >= head_rev
 	if stop:
-		cmd = "git svn fetch -r BASE:%d " % (head_rev)
+		cmd = "git svn fetch %s -r BASE:%d " % (fetch_extra_options, head_rev)
 	else:
-		cmd = "git svn fetch -r BASE:%d " % (i)
+		cmd = "git svn fetch %s -r BASE:%d " % (fetch_extra_options, i)
 
 
 	logthis(a,cmd)
