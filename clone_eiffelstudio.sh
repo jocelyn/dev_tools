@@ -4,7 +4,8 @@ export OP=$1
 export REPO_NAME=eiffelstudio-svn-git
 export REPO_SVNURL=https://svn.eiffel.com/eiffelstudio
 export CLONEGITSVN_STEP=50
-export CLONEGITSVN_OPTIONS=" -T trunk -b branches -b tags "
+export CLONEGITSVN_OPTIONS=" -T trunk -b branches -b tags --authors-file=/volume1/homes/jfiat/repo/dev_tools/es/svn.logs"
+export CLONEGITSVN_FETCH_OPTIONS=" --authors-file=/volume1/homes/jfiat/repo/dev_tools/es/svn.logs"
 
 f_usage() {
 echo Script
