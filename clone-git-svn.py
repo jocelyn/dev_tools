@@ -5,8 +5,48 @@ import os;
 from string import atoi,strip;
 import re;
 
+git_cmd = "/usr/bin/git"
+backup_enabled = 0
+
 
 ### Feature declaration ###
+def execute_cmd(a_cmd, a_msg="", exit_on_error=0):
+	import subprocess ;
+	print "Execute: %s \n" % (a_cmd)
+
+	r = 0
+	retcode = 0
+	err = ""
+	try:
+		retcode = subprocess.call(a_cmd, shell=True)
+		r = retcode
+		if retcode < 0:
+			r = -retcode
+			err = "Command was terminated by signal (retcode=%d)" %(-retcode)
+			print "%s\n" % (err)
+		#else: print "Command returned (retcode=%d)" %(-retcode)
+	except OSError, e:
+		r = -1
+		err = "Execution failed: %s" % (e)
+		print "%s\n" % (err)
+	except:
+		r = -1
+		err = "Execution interrupted"
+		print "%s\n" % (err)
+
+	if r:
+		if len(a_msg) > 0:
+			if r == -1:
+				print ("Error occurred (%s)\n", err)
+			else:
+				print ("Error: %s (%s error=%d: %s)\n"%(a_msg, err, r, os.strerror (r)))
+			if exit_on_error == 1:
+				global a
+				logthis(os.getcwd(), "Exit on Error (%s)" % (err))
+				#logthis(os.getcwd(), "Exit on Error (%s) cmd=%s" % (err, a_cmd))
+				sys.exit()
+	return r
+
 def last_rev(a_folder):
 	try:
 		f = open (lastrev_path (a_folder), 'r');
@@ -26,11 +66,15 @@ def get_step(a_folder):
 	global step
 	print "Getting step from " + step_path (a_folder)
 	try:
-		f = open (step_path (a_folder), 'r');
-		l = f.readline()
-		print l
-		f.close()
-		step = atoi(l)
+		fn = step_path (a_folder);
+		if os.path.exists (fn):
+			f = open (step_path (a_folder), 'r');
+			l = f.readline()
+			print l
+			f.close()
+			step = atoi(l)
+		else:
+			set_step (a_folder, step)
 	except:
 		print "Error while retrieving STEP"
 		set_step (a_folder, step)
@@ -54,12 +98,12 @@ def do_stop():
 def ensure_tmp_folder(a_folder):
 	s = tmp_folder (a_folder)
 	if not os.path.exists (s):
-		os.mkdir (s)
+		os.makedirs (s)
 
 def ensure_backup(a_folder):
 	s = backup_path (a_folder)
 	if not os.path.exists (s):
-		os.mkdir (s)
+		os.makedirs (s)
 
 def tail(a_fn, n=4):
 	import re;
@@ -85,7 +129,9 @@ def get_svn_head_revision (a_repo_url):
 	try:
 		f = os.popen ("svn info %s" % (a_repo_url), 'r')
 		l_lines = re.split ("\n", f.read())
-		f.close()
+		r = f.close()
+		if r:
+			print "Error while getting HEAD of %s (error=%d)" % (a_repo_url, r)
 	except:
 		l_lines = []
 
@@ -194,7 +240,7 @@ else:
 if os.environ.has_key ('CLONEGITSVN_STEP'):
 	step = atoi(os.environ['CLONEGITSVN_STEP'])
 else:
-	step = 500
+	step = 50
 repo_url = ""
 a = sys.argv[1]
 
@@ -206,15 +252,16 @@ if len(sys.argv) > 2:
 		sys.exit()
 	elif sys.argv[2] == "init":
 		repo_url = sys.argv[3]
-		os.system ("mkdir %s" % (repo_folder (a)))
+		os.makedirs (repo_folder (a))
 		if os.environ.has_key ('CLONEGITSVN_OPTIONS'):
 			extra_options = os.environ['CLONEGITSVN_OPTIONS']
 		else:
 			extra_options = " --stdlayout "
-		cmd = "git svn init %s %s -R svn %s" % (repo_url, extra_options, repo_folder(a))
+		cmd = "%s svn init %s %s -R svn %s" % (git_cmd, repo_url, extra_options, repo_folder(a))
 		print cmd
-		os.system (cmd)
+		execute_cmd(cmd, "'init' failed", 1)
 		print_info(a)
+		sys.exit()
 	elif sys.argv[2] == "fetch":
 		print_info(a)
 		if len (sys.argv) > 3:
@@ -274,16 +321,17 @@ while not stop:
 	i = repo_last_rev + step
 	stop = head_rev > 0 and i >= head_rev
 	if stop:
-		cmd = "git svn fetch %s -r BASE:%d " % (fetch_extra_options, head_rev)
+		cmd = "%s svn fetch %s -r BASE:%d " % (git_cmd, fetch_extra_options, head_rev)
 	else:
-		cmd = "git svn fetch %s -r BASE:%d " % (fetch_extra_options, i)
+		cmd = "%s svn fetch %s -r BASE:%d " % (git_cmd, fetch_extra_options, i)
 
 
 	logthis(a,cmd)
 	sys.stdout.write ("%s\n" % (cmd))
 	os.chdir (repo_folder(a))
-	os.system (cmd)
-	os.system ("git gc")
+	fetch_retcode = execute_cmd(cmd, "'fetch' failed, exit now" , 1)
+
+	execute_cmd("%s gc" % (git_cmd), "git gc failed, ignore" , 0)
 	os.chdir (d)
 
 	repo_last_rev = get_last_fetched_rev(a)
@@ -294,12 +342,16 @@ while not stop:
 			ensure_backup(a);
 			rev = last_rev(a)
 			if rev > 0:
-				print "Backing up %s to %s" % (repo_rev_folder (a, rev), backup_path (a))
-				os.system ("%s %s %s" % (mv_cmd, repo_rev_folder(a, rev), backup_path (a)))
-			os.system ("%s %s %s" % (cpdir_cmd, os.path.join (repo_folder(a), '.git'), repo_rev_folder (a, repo_last_rev)))
+				if backup_enabled:
+					print "Backing up %s to %s" % (repo_rev_folder (a, rev), backup_path (a))
+					execute_cmd ("%s %s %s" % (mv_cmd, repo_rev_folder(a, rev), backup_path (a)), "backup failed")
+				else:
+					execute_cmd ("%s %s" % (rmdir_cmd, repo_rev_folder(a, rev)), "Repo [%d] removal failed" % (rev))
+			execute_cmd ("%s %s %s" % (cpdir_cmd, os.path.join (repo_folder(a), '.git'), repo_rev_folder (a, repo_last_rev)), "keep current repo failed")
+
+			## record last rev fetched
 			os.system ("echo %d > %s" % (repo_last_rev, lastrev_path (a)))
 		else:
 			do_stop()
 
 sys.exit()
-
