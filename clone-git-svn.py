@@ -64,19 +64,16 @@ def last_rev(a_folder):
 
 def get_step(a_folder):
 	global step
-	print "Getting step from " + step_path (a_folder)
 	try:
 		fn = step_path (a_folder);
 		if os.path.exists (fn):
 			f = open (step_path (a_folder), 'r');
 			l = f.readline()
-			print l
 			f.close()
 			step = atoi(l)
 		else:
 			set_step (a_folder, step)
 	except:
-		print "Error while retrieving STEP"
 		set_step (a_folder, step)
 
 def set_step(a_folder, n):
@@ -121,7 +118,8 @@ def tail(a_fn, n=4):
 	l_upper = l_count
 	res = ""
 	for i in range(l_lower, l_upper):
-		res = "%s%s\n" % (res, l_lines[i])
+		if len(l_lines[i]) > 0:
+			res = "%s%s\n" % (res, l_lines[i])
 	return res
 
 
@@ -182,11 +180,10 @@ def get_last_fetched_rev(a):
 
 def print_info(a,rev=0):
 	if rev == 0:
-		print ("Info for [%s]" % (a))
 		s = tail (git_metadata_filename (a), 4)
-		print s
 		get_step(a)
-		print " - Step=%d" % (step)
+		print ("Info for [%s] step=%d" % (a, step))
+		print "  %s" % (s)
 		if stop_requested(a):
 			print " - Stop requested"
 	else:
