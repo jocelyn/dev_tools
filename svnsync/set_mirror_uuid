@@ -1,0 +1,11 @@
+#!/bin/sh
+DEST="$1"
+UUID=$2
+DEST_TMP="$1.tmp"
+
+echo SVN-fs-dump-format-version: 2 > $DEST_TMP
+echo "" >> $DEST_TMP
+echo UUID: $UUID >> $DEST_TMP
+
+svnadmin load --force-uuid `pwd`/$DEST < $DEST_TMP
+rm $DEST_TMP

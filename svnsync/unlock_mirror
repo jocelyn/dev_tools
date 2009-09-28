@@ -1,0 +1,3 @@
+#!/bin/sh
+DEST="$1"
+svn pdel --revprop -r 0 svn:sync-lock file://`pwd`/$DEST

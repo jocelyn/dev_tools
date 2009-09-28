@@ -1,0 +1,6 @@
+#!/bin/sh
+DEST="$1"
+
+echo Start svnsync $DEST
+svnsync sync file://`pwd`/$DEST --username svnsync
+echo svnsync $DEST completed.

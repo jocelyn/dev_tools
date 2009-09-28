@@ -1,0 +1,17 @@
+#!/bin/sh
+DEST="$1"
+if [ "$DEST" = "" ]; then exit 0; fi
+
+svnadmin create $DEST
+echo "#!/bin/sh" > $DEST/hooks/pre-revprop-change
+echo "USER=\"\$3\"" >> $DEST/hooks/pre-revprop-change
+echo "" >> $DEST/hooks/pre-revprop-change
+echo "if [ \"\$USER\" = \"svnsync\" ]; then exit 0; fi" >> $DEST/hooks/pre-revprop-change
+echo "echo \"Only svnsync user can change revprops\" >&2" >> $DEST/hooks/pre-revprop-change
+echo "exit 1" >> $DEST/hooks/pre-revprop-change
+
+chmod +x $DEST/hooks/pre-revprop-change
+
+svnsync init --username svnsync file://`pwd`/$DEST https://svn.eiffel.com/eiffelstudio
+
+echo "Now to sync it, you must type \"svnsync sync file://\`pwd\`/$DEST \" "
