@@ -20,28 +20,40 @@ echo - clean: clean previously stopped cloning
 echo - reset: reset cloning i.e clobber
 }
 
+f_output() {
+	tail -10 repo/$REPO_NAME.out
+	tail -10 repo/$REPO_NAME.err
+}
+
 f_init() { 
 	python clone-git-svn.py $REPO_NAME init $REPO_SVNURL 
+	f_output
 }
 f_fetch() {
 	python clone-git-svn.py $REPO_NAME fetch 
+	#f_output
 }
 f_info() {
 	python clone-git-svn.py $REPO_NAME info 
+	f_output
 }
 f_stop() {
 	python clone-git-svn.py $REPO_NAME stop 
+	f_output
 }
 f_unstop() {
 	python clone-git-svn.py $REPO_NAME unstop 
+	f_output
 }
 f_clean() {
 	python clone-git-svn.py $REPO_NAME clean 
+	f_output
 }
 
 f_reset() {
-python clone-git-svn.py $REPO_NAME clean
-\rm -rf ${REPO_NAME}*
+	python clone-git-svn.py $REPO_NAME clean
+	f_output
+	\rm -rf ${REPO_NAME}*
 }
 
 if [ "$OP" = "" ]; then  

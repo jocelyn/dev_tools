@@ -5,43 +5,48 @@ import os;
 from string import atoi,strip;
 import re;
 
-git_cmd = "/usr/bin/git"
+git_cmd = "git"
+svn_cmd = "svn"
 backup_enabled = 0
 
 
 ### Feature declaration ###
+def output(m):
+	global repo_id
+	print (m)
+
 def execute_cmd(a_cmd, a_msg="", exit_on_error=0):
+	global repo_id
 	import subprocess ;
-	print "Execute: %s \n" % (a_cmd)
+	output ( "Execute: %s \n" % (a_cmd) )
 
 	r = 0
 	retcode = 0
 	err = ""
 	try:
-		retcode = subprocess.call(a_cmd, shell=True)
+		retcode = subprocess.call(a_cmd,0, None, None, sys.stdout, sys.stderr, shell=True)
 		r = retcode
 		if retcode < 0:
 			r = -retcode
 			err = "Command was terminated by signal (retcode=%d)" %(-retcode)
-			print "%s\n" % (err)
-		#else: print "Command returned (retcode=%d)" %(-retcode)
+			output ( "%s\n" % (err) )
+		#else: output ( "Command returned (retcode=%d)" %(-retcode) )
 	except OSError, e:
 		r = -1
 		err = "Execution failed: %s" % (e)
-		print "%s\n" % (err)
+		output ( "%s\n" % (err) )
 	except:
 		r = -1
 		err = "Execution interrupted"
-		print "%s\n" % (err)
+		output ( "%s\n" % (err) )
 
 	if r:
 		if len(a_msg) > 0:
 			if r == -1:
-				print ("Error occurred (%s)\n", err)
+				output ( ("Error occurred (%s)\n", err) )
 			else:
-				print ("Error: %s (%s error=%d: %s)\n"%(a_msg, err, r, os.strerror (r)))
+				output ("Error: %s (%s error=%d: %s)\n"%(a_msg, err, r, os.strerror (r)))
 			if exit_on_error == 1:
-				global a
 				logthis(os.getcwd(), "Exit on Error (%s)" % (err))
 				#logthis(os.getcwd(), "Exit on Error (%s) cmd=%s" % (err, a_cmd))
 				sys.exit()
@@ -82,14 +87,14 @@ def set_step(a_folder, n):
 		f.write("%d\n" % (n))
 		f.close()
 	except:
-		print "Error while writing to file %s" % (step_path (a_folder))
+		output ( "Error while writing to file %s" % (step_path (a_folder)) )
 		sys.exit()
 
 def stop_requested(a_folder):
 	return os.path.exists (stop_path (a_folder))
 
 def do_stop():
-	print ("Stop requested!!!")
+	output ("Stop requested!!!")
 	sys.exit(3)
 
 def ensure_tmp_folder(a_folder):
@@ -124,12 +129,13 @@ def tail(a_fn, n=4):
 
 
 def get_svn_head_revision (a_repo_url):
+	global svn_cmd
 	try:
-		f = os.popen ("svn info %s" % (a_repo_url), 'r')
+		f = os.popen ("%s info %s" % (svn_cmd, a_repo_url), 'r')
 		l_lines = re.split ("\n", f.read())
 		r = f.close()
 		if r:
-			print "Error while getting HEAD of %s (error=%d)" % (a_repo_url, r)
+			output ( "Error while getting HEAD of %s (error=%d)" % (a_repo_url, r) )
 	except:
 		l_lines = []
 
@@ -182,14 +188,14 @@ def print_info(a,rev=0):
 	if rev == 0:
 		s = tail (git_metadata_filename (a), 4)
 		get_step(a)
-		print ("Info for [%s] step=%d" % (a, step))
-		print "  %s" % (s)
+		output ("Info for [%s] step=%d" % (a, step))
+		output ( "  %s" % (s) )
 		if stop_requested(a):
-			print " - Stop requested"
+			output ( " - Stop requested" )
 	else:
-		print ("Info for [%s_%d]" % (a,rev))
+		output ("Info for [%s_%d]" % (a,rev))
 		s = tail (git_metadata_filename (a,rev), 4)
-		print s
+		output ( s )
 
 def repo_folder(a):
 	return os.path.join ("repo", a)
@@ -218,6 +224,12 @@ def logthis(a_folder,msg):
 ### MAIN ######################################
 ###############################################
 
+global repo_id
+repo_id = sys.argv[1]
+
+sys.stdout = open("%s.out" % (os.path.join ("repo", repo_id)),"a+")
+sys.stderr = open("%s.err" % (os.path.join ("repo", repo_id)),"a+")
+
 is_windows = sys.platform == 'win32'
 
 if is_windows:
@@ -239,82 +251,80 @@ if os.environ.has_key ('CLONEGITSVN_STEP'):
 else:
 	step = 50
 repo_url = ""
-a = sys.argv[1]
-
-ensure_tmp_folder(a)
-get_step(a)
+ensure_tmp_folder(repo_id)
+get_step(repo_id)
 if len(sys.argv) > 2:
 	if sys.argv[2] == "info":
-		print_info(a)
+		print_info(repo_id)
 		sys.exit()
 	elif sys.argv[2] == "init":
 		repo_url = sys.argv[3]
-		os.makedirs (repo_folder (a))
+		os.makedirs (repo_folder (repo_id))
 		if os.environ.has_key ('CLONEGITSVN_OPTIONS'):
 			extra_options = os.environ['CLONEGITSVN_OPTIONS']
 		else:
 			extra_options = " --stdlayout "
-		cmd = "%s svn init %s %s -R svn %s" % (git_cmd, repo_url, extra_options, repo_folder(a))
-		print cmd
+		cmd = "%s svn init %s %s -R svn %s" % (git_cmd, repo_url, extra_options, repo_folder(repo_id))
+		output ( cmd )
 		execute_cmd(cmd, "'init' failed", 1)
-		print_info(a)
+		print_info(repo_id)
 		sys.exit()
 	elif sys.argv[2] == "fetch":
-		print_info(a)
+		print_info(repo_id)
 		if len (sys.argv) > 3:
 			step = atoi (sys.argv[3])
 	elif sys.argv[2] == "stop":
-		os.system ("echo stop > %s" % (stop_path (a)))
-		print ("Requesting stop for %s" % (a))
-		print_info(a)
+		os.system ("echo stop > %s" % (stop_path (repo_id)))
+		output ("Requesting stop for %s" % (repo_id))
+		print_info(repo_id)
 		sys.exit()
 	elif sys.argv[2] == "unstop":
-		print_info(a)
-		os.system ("%s %s" % (rm_cmd, stop_path (a)))
+		print_info(repo_id)
+		os.system ("%s %s" % (rm_cmd, stop_path (repo_id)))
 		sys.exit()
 	elif sys.argv[2] == "clean":
-		print_info(a)
+		print_info(repo_id)
 		if len (sys.argv) > 3:
 			rev = atoi (sys.argv[3])
 		else:
-			rev = last_rev(a)
-		print_info(a,rev)
-		os.system ("%s %s" % (cat_cmd, git_metadata_filename(a,rev)))
+			rev = last_rev(repo_id)
+		print_info(repo_id,rev)
+		os.system ("%s %s" % (cat_cmd, git_metadata_filename(repo_id,rev)))
 
-		if os.path.exists (repo_rev_folder (a, rev)):
-			os.system ("%s %s" % (rmdir_cmd, os.path.join (repo_folder(a),'.git')))
-			os.system ("%s %s %s" % (cpdir_cmd, ackup_rev_path (a, rev), os.path.join (repo_folder(a),'.git')))
+		if os.path.exists (repo_rev_folder (repo_id, rev)):
+			os.system ("%s %s" % (rmdir_cmd, os.path.join (repo_folder(repo_id),'.git')))
+			os.system ("%s %s %s" % (cpdir_cmd, ackup_rev_path (repo_id, rev), os.path.join (repo_folder(repo_id),'.git')))
 		else:
-			print ("Cleaning ... unsafe")
-		os.system ("%s %s" % (rm_cmd, stop_path (a)))
+			output ("Cleaning ... unsafe")
+		os.system ("%s %s" % (rm_cmd, stop_path (repo_id)))
 		sys.exit()
 	else:
 		sys.exit()
 else:
-	print_info(a)
+	print_info(repo_id)
 
 d = os.getcwd()
 i = 0
-stop = stop_requested(a)
+stop = stop_requested(repo_id)
 if stop:
 	do_stop()
-ensure_backup(a);
+ensure_backup(repo_id);
 
-repo_last_rev = get_last_fetched_rev(a)
+repo_last_rev = get_last_fetched_rev(repo_id)
 
 if repo_url == "":
-	repo_url = get_info(a, "reposRoot")
+	repo_url = get_info(repo_id, "reposRoot")
 head_rev = get_svn_head_revision (repo_url)
-print "svn URL=%s" %(repo_url)
-print "svn HEAD=%d" %(head_rev)
-print "last svn fetched=%d" %(repo_last_rev)
+output ( "svn URL=%s" %(repo_url) )
+output ( "svn HEAD=%d" %(head_rev) )
+output ( "last svn fetched=%d" %(repo_last_rev) )
 
 fetch_extra_options = ""
 if os.environ.has_key ('CLONEGITSVN_FETCH_OPTIONS'):
 	fetch_extra_options = os.environ['CLONEGITSVN_FETCH_OPTIONS']
 
 while not stop:
-	get_step(a)
+	get_step(repo_id)
 	i = repo_last_rev + step
 	stop = head_rev > 0 and i >= head_rev
 	if stop:
@@ -323,32 +333,35 @@ while not stop:
 		cmd = "%s svn fetch %s -r BASE:%d " % (git_cmd, fetch_extra_options, i)
 
 
-	logthis(a,cmd)
+	logthis(repo_id,cmd)
 	sys.stdout.write ("%s\n" % (cmd))
-	os.chdir (repo_folder(a))
+	os.chdir (repo_folder(repo_id))
 	fetch_retcode = execute_cmd(cmd, "'fetch' failed, exit now" , 1)
 
 	execute_cmd("%s gc" % (git_cmd), "git gc failed, ignore" , 0)
 	os.chdir (d)
 
-	repo_last_rev = get_last_fetched_rev(a)
+	repo_last_rev = get_last_fetched_rev(repo_id)
 
 	if not stop:
-		stop = stop_requested(a)
+		stop = stop_requested(repo_id)
 		if not stop:
-			ensure_backup(a);
-			rev = last_rev(a)
+			ensure_backup(repo_id);
+			rev = last_rev(repo_id)
 			if rev > 0:
 				if backup_enabled:
-					print "Backing up %s to %s" % (repo_rev_folder (a, rev), backup_path (a))
-					execute_cmd ("%s %s %s" % (mv_cmd, repo_rev_folder(a, rev), backup_path (a)), "backup failed")
+					output ( "Backing up %s to %s" % (repo_rev_folder (repo_id, rev), backup_path (repo_id)) )
+					execute_cmd ("%s %s %s" % (mv_cmd, repo_rev_folder(repo_id, rev), backup_path (repo_id)), "backup failed")
 				else:
-					execute_cmd ("%s %s" % (rmdir_cmd, repo_rev_folder(a, rev)), "Repo [%d] removal failed" % (rev))
-			execute_cmd ("%s %s %s" % (cpdir_cmd, os.path.join (repo_folder(a), '.git'), repo_rev_folder (a, repo_last_rev)), "keep current repo failed")
+					execute_cmd ("%s %s" % (rmdir_cmd, repo_rev_folder(repo_id, rev)), "Repo [%d] removal failed" % (rev))
+			execute_cmd ("%s %s %s" % (cpdir_cmd, os.path.join (repo_folder(repo_id), '.git'), repo_rev_folder (repo_id, repo_last_rev)), "keep current repo failed")
 
 			## record last rev fetched
-			os.system ("echo %d > %s" % (repo_last_rev, lastrev_path (a)))
+			os.system ("echo %d > %s" % (repo_last_rev, lastrev_path (repo_id)))
 		else:
 			do_stop()
+
+sys.stdout.close()
+sys.stderr.close()
 
 sys.exit()
